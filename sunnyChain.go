@@ -61,6 +61,24 @@ func LeaderProc(ch chan inviteCard, id int, followerCh []chan inviteCard, mainCh
 
 }
 
+func canIDanceWithLeader(leader int, step int, buf [8]int) (isOK bool) {
+	if buf[step] == -1 {
+		//计算已经和leader跳过几次了
+		count := 0
+		for i := 0; i < 8; i++ {
+
+			if buf[i] == leader {
+				count++
+			}
+		}
+		if count < 2 {
+			return true
+		}
+
+	}
+	return false
+}
+
 func FollowerProc(ch chan inviteCard, id int, leaderCh []chan inviteCard) {
 	buf := [8]int{-1, -1, -1, -1, -1, -1, -1, -1} //个人资料库
 	for {
@@ -68,30 +86,14 @@ func FollowerProc(ch chan inviteCard, id int, leaderCh []chan inviteCard) {
 		theLead := myReadInviteCard.leader
 		theStep := myReadInviteCard.danceQuene
 		theFollower := myReadInviteCard.follower
+
 		if id != theFollower {
 			fmt.Println("erro!!!!")
 		}
-		if buf[theStep] == -1 {
-			//计算已经和leader跳过几次了
-			count := 0
-			for i := 0; i < 8; i++ {
-				if buf[i] == theLead {
-					count++
 
-				}
-			}
-			if count >= 2 { //跳过2次了
-				myReadInviteCard.leader = -1
-				leaderCh[theLead] <- myReadInviteCard
-				//fmt.Println("re", "id", id, "leader", theLead, "step", myReadInviteCard.danceQuene)
-				//fmt.Println("re", "id", myReadInviteCard.follower, "leader", theLead, "step", myReadInviteCard.danceQuene)
-			} else { //没有跳2次
-				buf[theStep] = theLead
-				leaderCh[theLead] <- myReadInviteCard
-				//fmt.Println("ac", "id", id, "leader", theLead, "step", myReadInviteCard.danceQuene)
-				//fmt.Println("ac", "id", myReadInviteCard.follower, "leader", theLead, "step", myReadInviteCard.danceQuene)
-			}
-
+		if canIDanceWithLeader(theLead, theStep, buf) {
+			buf[theStep] = theLead
+			leaderCh[theLead] <- myReadInviteCard
 		} else {
 			myReadInviteCard.leader = -1
 			leaderCh[theLead] <- myReadInviteCard
